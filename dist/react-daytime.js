@@ -23517,12 +23517,13 @@ var ReactDaytime = (function (_React$Component) {
 		this.canvasId = "react-daytime-" + (0, _uuid42["default"])();
 		// Ability to divide the hour
 		this.hourDivider = props.hourDivider || 1;
+		this.width = this.props.width || _constants.WIDTH;
 	}
 
 	_createClass(ReactDaytime, [{
 		key: "componentWillMount",
 		value: function componentWillMount() {
-			this.canvas = new _canvas2["default"](this.props.onChange, this.props.defaultValue, this.props.theme, this.hourDivider);
+			this.canvas = new _canvas2["default"](this.props.onChange, this.props.defaultValue, this.props.theme, this.hourDivider, this.width);
 		}
 	}, {
 		key: "componentDidMount",
@@ -23532,7 +23533,7 @@ var ReactDaytime = (function (_React$Component) {
 	}, {
 		key: "render",
 		value: function render() {
-			return _react2["default"].createElement("canvas", { id: this.canvasId, width: _constants.WIDTH, height: _constants.HEIGHT });
+			return _react2["default"].createElement("canvas", { id: this.canvasId, width: this.width, height: _constants.HEIGHT });
 		}
 	}]);
 
@@ -23543,7 +23544,8 @@ ReactDaytime.propTypes = {
 	defaultValue: _propTypes2["default"].object,
 	onChange: _propTypes2["default"].func,
 	theme: _propTypes2["default"].object,
-	hourDivider: _propTypes2["default"].number
+	hourDivider: _propTypes2["default"].number,
+	width: _propTypes2["default"].number
 };
 
 exports["default"] = ReactDaytime;
@@ -23580,16 +23582,25 @@ var _theme = require("./theme");
 var _theme2 = _interopRequireDefault(_theme);
 
 var DayTimeCanvas = (function () {
-	function DayTimeCanvas(onChange, defaultValue, customTheme, hourDivider) {
+	function DayTimeCanvas(onChange, defaultValue, customTheme, hourDivider, canvasWidth) {
 		_classCallCheck(this, DayTimeCanvas);
 
 		this.theme = new _theme2["default"](customTheme);
 		this.defaultValue = defaultValue;
 		_canvasState.callbacks.onChange = onChange;
 		this.hourDivider = hourDivider;
+		this.canvasWidth = canvasWidth;
 	}
 
 	_createClass(DayTimeCanvas, [{
+		key: "_calculateCellWidth",
+		value: function _calculateCellWidth() {
+			var hourDivider = this.hourDivider;
+			var canvasWidth = this.canvasWidth;
+
+			return CONSTANTS.CELL_WIDTH / hourDivider * canvasWidth / CONSTANTS.WIDTH;
+		}
+	}, {
 		key: "_findCell",
 		value: function _findCell(point) {
 			var found = null;
@@ -23617,12 +23628,14 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_syncHeaderState",
 		value: function _syncHeaderState() {
+			var hourDivider = this.hourDivider;
+
 			var selected = undefined;
 			var i = undefined,
 			    j = undefined;
 			for (i = 0; i < 7; i++) {
 				selected = true;
-				for (j = 0; j < 24; j++) {
+				for (j = 0; j < 24 * hourDivider; j++) {
 					if (!_canvasState.state[i][j].selected) {
 						selected = false;
 						break;
@@ -23630,7 +23643,7 @@ var DayTimeCanvas = (function () {
 				}
 				this._setHeaderState(_canvasState.dayState[i], selected);
 			}
-			for (i = 0; i < 24; i++) {
+			for (i = 0; i < 24 * hourDivider; i++) {
 				selected = true;
 				for (j = 0; j < 7; j++) {
 					if (!_canvasState.state[j][i].selected) {
@@ -23663,7 +23676,6 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_setState",
 		value: function _setState(cellState, selected) {
-			console.log("inside setState");
 			cellState.selected = selected;
 			if (selected) {
 				cellState.cell.fillColor = this.theme.cell.backgroundColor[1];
@@ -23704,9 +23716,11 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_flipRow",
 		value: function _flipRow(rowState, index) {
+			var hourDivider = this.hourDivider;
+
 			var selected = this._flipHeaderCell(rowState[index]);
 			var j = undefined;
-			for (j = 0; j < 24; j++) {
+			for (j = 0; j < 24 * hourDivider; j++) {
 				this._setState(_canvasState.state[index][j], selected);
 			}
 			this._fireChangeEvent();
@@ -23739,15 +23753,18 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_drawSlots",
 		value: function _drawSlots() {
-			var _this = this;
+			var _this2 = this;
 
+			var hourDivider = this.hourDivider;
+
+			var _this = this;
 			var i = undefined,
 			    j = undefined;
 			for (i = 0; i < 7; i++) {
 				_canvasState.state[i] = [];
-				for (j = 0; j < 24; j++) {
-					var topLeft = new _paper2["default"].Point(CONSTANTS.STARTX + j * CONSTANTS.CELL_WIDTH, CONSTANTS.STARTY + i * CONSTANTS.CELL_HEIGHT);
-					var rectSize = new _paper2["default"].Size(CONSTANTS.CELL_WIDTH, CONSTANTS.CELL_HEIGHT);
+				for (j = 0; j < 24 * hourDivider; j++) {
+					var topLeft = new _paper2["default"].Point(CONSTANTS.STARTX + j * _this._calculateCellWidth(), CONSTANTS.STARTY + i * CONSTANTS.CELL_HEIGHT);
+					var rectSize = new _paper2["default"].Size(_this._calculateCellWidth(), CONSTANTS.CELL_HEIGHT);
 					var rect = new _paper2["default"].Rectangle(topLeft, rectSize);
 					var path = new _paper2["default"].Path.Rectangle(rect);
 					path.fillColor = this.theme.cell.backgroundColor[0];
@@ -23758,12 +23775,12 @@ var DayTimeCanvas = (function () {
 						selected: false,
 						x1: topLeft.x,
 						y1: topLeft.y,
-						x2: topLeft.x + CONSTANTS.CELL_WIDTH,
+						x2: topLeft.x + _this._calculateCellWidth(),
 						y2: topLeft.y + CONSTANTS.CELL_HEIGHT
 					};
 					(function (day, hour, slot) {
 						slot.on("click", function (ev) {
-							_this._flipCell(_canvasState.state[day][hour]);
+							_this2._flipCell(_canvasState.state[day][hour]);
 						});
 						slot.on("mousedrag", function (f) {
 							return f;
@@ -23775,8 +23792,11 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_drawRowHeader",
 		value: function _drawRowHeader() {
-			var _this2 = this;
+			var _this3 = this;
 
+			var hourDivider = this.hourDivider;
+
+			var _this = this;
 			// DAY CONTROLLERS
 			var i = undefined,
 			    j = undefined;
@@ -23791,62 +23811,6 @@ var DayTimeCanvas = (function () {
 				label.content = CONSTANTS.DAYS[i];
 				label.position = new _paper2["default"].Point(CONSTANTS.STARTX / 2, topLeft.y + CONSTANTS.CELL_HEIGHT / 2);
 				label.style = {
-					fillColor: _this2.theme.header.color[0]
-				};
-				if (_this2.theme.header.fontFamily) {
-					label.style.fontFamily = _this2.theme.header.fontFamily;
-				}
-				path.style = {
-					fillColor: _this2.theme.header.backgroundColor[0],
-					strokeColor: _this2.theme.border.color
-				};
-
-				_canvasState.dayState[i] = {
-					cell: path,
-					label: label,
-					selected: false,
-					x1: topLeft.x,
-					y1: topLeft.y,
-					x2: topLeft.x + CONSTANTS.CELL_WIDTH,
-					y2: topLeft.y + CONSTANTS.CELL_HEIGHT
-				};
-				(function (day, slot) {
-					var selectAllHours = function selectAllHours(ev) {
-						_this2._flipRow(_canvasState.dayState, day);
-					};
-					slot.on("click", selectAllHours);
-					label.on("click", selectAllHours);
-					label.on("mouseenter", _this2._cursorPointer);
-					label.on("mouseleave", _this2._cursorDefault);
-					slot.on("mouseenter", _this2._cursorPointer);
-					slot.on("mouseleave", _this2._cursorDefault);
-				})(i, path);
-			};
-
-			for (i = 0; i < 7; i++) {
-				_loop();
-			}
-		}
-	}, {
-		key: "_drawColHeader",
-		value: function _drawColHeader(hourDivider) {
-			var _this3 = this;
-
-			// HOUR CONTROLLERS
-			var i = undefined,
-			    j = undefined;
-
-			var _loop2 = function () {
-				var topLeft = new _paper2["default"].Point(CONSTANTS.STARTX + i * CONSTANTS.CELL_WIDTH, 0);
-				var rectSize = new _paper2["default"].Size(CONSTANTS.CELL_WIDTH, CONSTANTS.STARTY);
-				var rect = new _paper2["default"].Rectangle(topLeft, rectSize);
-				var path = new _paper2["default"].Path.Rectangle(rect);
-
-				var label = new _paper2["default"].PointText();
-				label.content = CONSTANTS.HOURS[i];
-				label.position = new _paper2["default"].Point(topLeft.x + CONSTANTS.CELL_WIDTH / 2, topLeft.y + CONSTANTS.STARTY / 2);
-				label.rotation = -90;
-				label.style = {
 					fillColor: _this3.theme.header.color[0]
 				};
 				if (_this3.theme.header.fontFamily) {
@@ -23857,25 +23821,87 @@ var DayTimeCanvas = (function () {
 					strokeColor: _this3.theme.border.color
 				};
 
+				_canvasState.dayState[i] = {
+					cell: path,
+					label: label,
+					selected: false,
+					x1: topLeft.x,
+					y1: topLeft.y,
+					x2: topLeft.x + _this._calculateCellWidth(),
+					y2: topLeft.y + CONSTANTS.CELL_HEIGHT
+				};
+				(function (day, slot) {
+					var selectAllHours = function selectAllHours(ev) {
+						_this3._flipRow(_canvasState.dayState, day);
+					};
+					slot.on("click", selectAllHours);
+					label.on("click", selectAllHours);
+					label.on("mouseenter", _this3._cursorPointer);
+					label.on("mouseleave", _this3._cursorDefault);
+					slot.on("mouseenter", _this3._cursorPointer);
+					slot.on("mouseleave", _this3._cursorDefault);
+				})(i, path);
+			};
+
+			for (i = 0; i < 7; i++) {
+				_loop();
+			}
+		}
+	}, {
+		key: "_drawColHeader",
+		value: function _drawColHeader() {
+			var _this4 = this;
+
+			var hourDivider = this.hourDivider;
+
+			// HOUR CONTROLLERS
+			var i = undefined,
+			    j = undefined;
+
+			var _loop2 = function () {
+				var topLeft = new _paper2["default"].Point(CONSTANTS.STARTX + i * _this4._calculateCellWidth(), 0);
+				var rectSize = new _paper2["default"].Size(_this4._calculateCellWidth(), CONSTANTS.STARTY);
+				var rect = new _paper2["default"].Rectangle(topLeft, rectSize);
+				var path = new _paper2["default"].Path.Rectangle(rect);
+
+				var label = new _paper2["default"].PointText();
+				var hourFraction = i % hourDivider * (60 / hourDivider) % 60;
+
+				var index = parseInt(i / hourDivider);
+				var splittedContent = CONSTANTS.HOURS[index].split(" ");
+				label.content = "" + splittedContent[0] + (hourFraction ? ":" + hourFraction : "") + " " + splittedContent[1];
+				label.position = new _paper2["default"].Point(topLeft.x + _this4._calculateCellWidth() / 2, topLeft.y + CONSTANTS.STARTY / 2);
+				label.rotation = -90;
+				label.style = {
+					fillColor: _this4.theme.header.color[0]
+				};
+				if (_this4.theme.header.fontFamily) {
+					label.style.fontFamily = _this4.theme.header.fontFamily;
+				}
+				path.style = {
+					fillColor: _this4.theme.header.backgroundColor[0],
+					strokeColor: _this4.theme.border.color
+				};
+
 				_canvasState.hourState[i] = {
 					cell: path,
 					label: label,
 					selected: false,
 					x1: topLeft.x,
 					y1: topLeft.y,
-					x2: topLeft.x + CONSTANTS.CELL_WIDTH,
+					x2: topLeft.x + _this4._calculateCellWidth(),
 					y2: topLeft.y + CONSTANTS.CELL_HEIGHT
 				};
 				(function (hour, slot) {
 					var selectAllDays = function selectAllDays() {
-						_this3._flipCol(_canvasState.hourState, hour);
+						_this4._flipCol(_canvasState.hourState, hour);
 					};
 					label.on("click", selectAllDays);
 					slot.on("click", selectAllDays);
-					label.on("mouseenter", _this3._cursorPointer);
-					label.on("mouseleave", _this3._cursorDefault);
-					slot.on("mouseenter", _this3._cursorPointer);
-					slot.on("mouseleave", _this3._cursorDefault);
+					label.on("mouseenter", _this4._cursorPointer);
+					label.on("mouseleave", _this4._cursorDefault);
+					slot.on("mouseenter", _this4._cursorPointer);
+					slot.on("mouseleave", _this4._cursorDefault);
 				})(i, path);
 			};
 
@@ -23886,7 +23912,9 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_drawResetButton",
 		value: function _drawResetButton() {
-			var _this4 = this;
+			var _this5 = this;
+
+			var hourDivider = this.hourDivider;
 
 			// filler
 			var btnReset = new _paper2["default"].Path.Rectangle(new _paper2["default"].Rectangle(new _paper2["default"].Point(0, 0), new _paper2["default"].Size(CONSTANTS.STARTX, CONSTANTS.STARTY)));
@@ -23905,11 +23933,13 @@ var DayTimeCanvas = (function () {
 			};
 			var resetState = function resetState() {
 				CONSTANTS.DAYS.forEach(function (day, dayNum) {
-					CONSTANTS.HOURS.forEach(function (hour, hourNum) {
-						_this4._setState(_canvasState.state[dayNum][hourNum], false);
+					Array.from({ length: CONSTANTS.HOURS.length * hourDivider }, function (v, i) {
+						return i;
+					}).forEach(function (hour, hourNum) {
+						_this5._setState(_canvasState.state[dayNum][hourNum], false);
 					});
 				});
-				_this4._fireChangeEvent();
+				_this5._fireChangeEvent();
 			};
 			label.on("click", resetState);
 			btnReset.on("click", resetState);
@@ -23921,13 +23951,15 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_populateDefaultState",
 		value: function _populateDefaultState() {
-			var _this5 = this;
+			var _this6 = this;
+
+			var hourDivider = this.hourDivider;
 
 			// set defaultValue
 			CONSTANTS.DAYS.forEach(function (day, dayNum) {
 				CONSTANTS.HOURS.forEach(function (hour, hourNum) {
-					if (_this5.defaultValue && day in _this5.defaultValue && _this5.defaultValue[day].indexOf(hourNum) >= 0) {
-						_this5._setState(_canvasState.state[dayNum][hourNum], true);
+					if (_this6.defaultValue && day in _this6.defaultValue && _this6.defaultValue[day].indexOf(hourNum) >= 0) {
+						_this6._setState(_canvasState.state[dayNum][hourNum], true);
 					}
 				});
 			});
@@ -23935,7 +23967,9 @@ var DayTimeCanvas = (function () {
 	}, {
 		key: "_attachEvents",
 		value: function _attachEvents() {
-			var _this6 = this;
+			var _this7 = this;
+
+			var hourDivider = this.hourDivider;
 
 			// Marquee Select
 			_paper2["default"].view.on("mousedrag", function (ev) {
@@ -23943,35 +23977,34 @@ var DayTimeCanvas = (function () {
 				if (!_canvasState.dragState.dragging) {
 					_canvasState.dragState.dragging = true;
 					_canvasState.dragState.dragStart = pos;
-					_canvasState.dragState.startCell = _this6._findCell(pos);
+					_canvasState.dragState.startCell = _this7._findCell(pos);
 					if (_canvasState.dragState.startCell) {
 						_canvasState.dragState.paintSelected = !_canvasState.dragState.startCell.selected;
 					} else {
 						_canvasState.dragState.paintSelected = true;
 					}
 				}
-				_this6._findAllSelected(_canvasState.dragState.dragStart, pos, function (slot) {
-					_this6._setState(slot, _canvasState.dragState.paintSelected);
+				_this7._findAllSelected(_canvasState.dragState.dragStart, pos, function (slot) {
+					_this7._setState(slot, _canvasState.dragState.paintSelected);
 				});
 			});
 			// End drag-mode
 			_paper2["default"].view.on("mouseup", function (ev) {
 				if (_canvasState.dragState.dragging) {
 					_canvasState.dragState.dragging = false;
-					_this6._onDragEnd();
+					_this7._onDragEnd();
 				}
 			});
 		}
 	}, {
 		key: "render",
 		value: function render(canvasId) {
-			console.log("rendering daytime canvas", { hourDivider: this.hourDivider });
 			var hourDivider = this.hourDivider;
 			_paper2["default"].setup(canvasId);
 			this._drawRowHeader();
-			this._drawColHeader(hourDivider);
+			this._drawColHeader();
 			this._drawResetButton();
-			this._drawSlots(hourDivider);
+			this._drawSlots();
 			this._populateDefaultState();
 			this._attachEvents();
 		}
