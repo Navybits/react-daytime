@@ -79,6 +79,7 @@ export default class DayTimeCanvas {
     }
 
     _setState(cellState, selected) {
+        console.log('inside setState')
         cellState.selected = selected;
         if(selected) {
             cellState.cell.fillColor = this.theme.cell.backgroundColor[1];
