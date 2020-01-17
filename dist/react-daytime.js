@@ -23542,7 +23542,8 @@ var ReactDaytime = (function (_React$Component) {
 ReactDaytime.propTypes = {
 	defaultValue: _propTypes2["default"].object,
 	onChange: _propTypes2["default"].func,
-	theme: _propTypes2["default"].object
+	theme: _propTypes2["default"].object,
+	hourDivider: _propTypes2["default"].number
 };
 
 exports["default"] = ReactDaytime;
@@ -23828,7 +23829,7 @@ var DayTimeCanvas = (function () {
 		}
 	}, {
 		key: "_drawColHeader",
-		value: function _drawColHeader() {
+		value: function _drawColHeader(hourDivider) {
 			var _this3 = this;
 
 			// HOUR CONTROLLERS
@@ -23878,7 +23879,7 @@ var DayTimeCanvas = (function () {
 				})(i, path);
 			};
 
-			for (i = 0; i < 24; i++) {
+			for (i = 0; i < 24 * hourDivider; i++) {
 				_loop2();
 			}
 		}
@@ -23965,11 +23966,12 @@ var DayTimeCanvas = (function () {
 		key: "render",
 		value: function render(canvasId) {
 			console.log("rendering daytime canvas", { hourDivider: this.hourDivider });
+			var hourDivider = this.hourDivider;
 			_paper2["default"].setup(canvasId);
 			this._drawRowHeader();
-			this._drawColHeader();
+			this._drawColHeader(hourDivider);
 			this._drawResetButton();
-			this._drawSlots();
+			this._drawSlots(hourDivider);
 			this._populateDefaultState();
 			this._attachEvents();
 		}
