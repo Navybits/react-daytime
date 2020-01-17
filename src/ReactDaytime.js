@@ -10,28 +10,31 @@ class ReactDaytime extends React.Component {
 		super(props);
 		this.canvasId = "react-daytime-" + uuid();
 		// Ability to divide the hour
-		this.hourDivider = props.hourDivider || 1;
+        this.hourDivider = props.hourDivider || 1;
+        this.width = this.props.width || WIDTH;
 	}
 	componentWillMount() {
 		this.canvas = new DayTimeCanvas(
 			this.props.onChange,
 			this.props.defaultValue,
 			this.props.theme,
-			this.hourDivider
+            this.hourDivider,
+            this.width
 		);
 	}
 	componentDidMount() {
 		this.canvas.render(this.canvasId);
 	}
 	render() {
-		return <canvas id={this.canvasId} width={WIDTH} height={HEIGHT} />;
+		return <canvas id={this.canvasId} width={this.width} height={HEIGHT} />;
 	}
 }
 ReactDaytime.propTypes = {
 	defaultValue: PropTypes.object,
 	onChange: PropTypes.func,
 	theme: PropTypes.object,
-	hourDivider: PropTypes.number
+    hourDivider: PropTypes.number,
+    width: PropTypes.number
 };
 
 export default ReactDaytime;

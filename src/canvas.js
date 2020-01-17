@@ -12,13 +12,19 @@ import {
 import Theme from "./theme";
 
 export default class DayTimeCanvas {
-	constructor(onChange, defaultValue, customTheme, hourDivider) {
+	constructor(onChange, defaultValue, customTheme, hourDivider, canvasWidth) {
 		this.theme = new Theme(customTheme);
 		this.defaultValue = defaultValue;
 		callbacks.onChange = onChange;
 		this.hourDivider = hourDivider;
+		this.canvasWidth = canvasWidth;
 	}
-
+	_calculateCellWidth() {
+		let { hourDivider, canvasWidth } = this;
+		return (
+			((CONSTANTS.CELL_WIDTH / hourDivider) * canvasWidth) / CONSTANTS.WIDTH
+		);
+	}
 	_findCell(point) {
 		let found = null;
 		state.forEach(row => {
@@ -46,11 +52,12 @@ export default class DayTimeCanvas {
 	}
 
 	_syncHeaderState() {
+		let { hourDivider } = this;
 		let selected;
 		let i, j;
 		for (i = 0; i < 7; i++) {
 			selected = true;
-			for (j = 0; j < 24; j++) {
+			for (j = 0; j < 24 * hourDivider; j++) {
 				if (!state[i][j].selected) {
 					selected = false;
 					break;
@@ -58,7 +65,7 @@ export default class DayTimeCanvas {
 			}
 			this._setHeaderState(dayState[i], selected);
 		}
-		for (i = 0; i < 24; i++) {
+		for (i = 0; i < 24 * hourDivider; i++) {
 			selected = true;
 			for (j = 0; j < 7; j++) {
 				if (!state[j][i].selected) {
@@ -89,7 +96,6 @@ export default class DayTimeCanvas {
 	}
 
 	_setState(cellState, selected) {
-		console.log("inside setState");
 		cellState.selected = selected;
 		if (selected) {
 			cellState.cell.fillColor = this.theme.cell.backgroundColor[1];
@@ -126,9 +132,11 @@ export default class DayTimeCanvas {
 	}
 
 	_flipRow(rowState, index) {
+		let { hourDivider } = this;
+
 		const selected = this._flipHeaderCell(rowState[index]);
 		let j;
-		for (j = 0; j < 24; j++) {
+		for (j = 0; j < 24 * hourDivider; j++) {
 			this._setState(state[index][j], selected);
 		}
 		this._fireChangeEvent();
@@ -156,16 +164,18 @@ export default class DayTimeCanvas {
 	}
 
 	_drawSlots() {
+		let { hourDivider } = this;
+		let _this = this;
 		let i, j;
 		for (i = 0; i < 7; i++) {
 			state[i] = [];
-			for (j = 0; j < 24; j++) {
+			for (j = 0; j < 24 * hourDivider; j++) {
 				const topLeft = new paper.Point(
-					CONSTANTS.STARTX + j * CONSTANTS.CELL_WIDTH,
+					CONSTANTS.STARTX + j * _this._calculateCellWidth(),
 					CONSTANTS.STARTY + i * CONSTANTS.CELL_HEIGHT
 				);
 				const rectSize = new paper.Size(
-					CONSTANTS.CELL_WIDTH,
+					_this._calculateCellWidth(),
 					CONSTANTS.CELL_HEIGHT
 				);
 				const rect = new paper.Rectangle(topLeft, rectSize);
@@ -178,7 +188,7 @@ export default class DayTimeCanvas {
 					selected: false,
 					x1: topLeft.x,
 					y1: topLeft.y,
-					x2: topLeft.x + CONSTANTS.CELL_WIDTH,
+					x2: topLeft.x + _this._calculateCellWidth(),
 					y2: topLeft.y + CONSTANTS.CELL_HEIGHT
 				};
 				((day, hour, slot) => {
@@ -192,6 +202,8 @@ export default class DayTimeCanvas {
 	}
 
 	_drawRowHeader() {
+		let { hourDivider } = this;
+		let _this = this;
 		// DAY CONTROLLERS
 		let i, j;
 		for (i = 0; i < 7; i++) {
@@ -226,7 +238,7 @@ export default class DayTimeCanvas {
 				selected: false,
 				x1: topLeft.x,
 				y1: topLeft.y,
-				x2: topLeft.x + CONSTANTS.CELL_WIDTH,
+				x2: topLeft.x + _this._calculateCellWidth(),
 				y2: topLeft.y + CONSTANTS.CELL_HEIGHT
 			};
 			((day, slot) => {
@@ -243,22 +255,33 @@ export default class DayTimeCanvas {
 		}
 	}
 
-	_drawColHeader(hourDivider) {
+	_drawColHeader() {
+		let { hourDivider } = this;
+
 		// HOUR CONTROLLERS
 		let i, j;
 		for (i = 0; i < 24 * hourDivider; i++) {
 			const topLeft = new paper.Point(
-				CONSTANTS.STARTX + i * CONSTANTS.CELL_WIDTH,
+				CONSTANTS.STARTX + i * this._calculateCellWidth(),
 				0
 			);
-			const rectSize = new paper.Size(CONSTANTS.CELL_WIDTH, CONSTANTS.STARTY);
+			const rectSize = new paper.Size(
+				this._calculateCellWidth(),
+				CONSTANTS.STARTY
+			);
 			const rect = new paper.Rectangle(topLeft, rectSize);
 			const path = new paper.Path.Rectangle(rect);
 
 			const label = new paper.PointText();
-			label.content = CONSTANTS.HOURS[i];
+			let hourFraction = ((i % hourDivider) * (60 / hourDivider)) % 60;
+
+			let index = parseInt(i / hourDivider);
+			let splittedContent = CONSTANTS.HOURS[index].split(" ");
+			label.content = `${splittedContent[0]}${
+				hourFraction ? `:${hourFraction}` : ""
+			} ${splittedContent[1]}`;
 			label.position = new paper.Point(
-				topLeft.x + CONSTANTS.CELL_WIDTH / 2,
+				topLeft.x + this._calculateCellWidth() / 2,
 				topLeft.y + CONSTANTS.STARTY / 2
 			);
 			label.rotation = -90;
@@ -279,7 +302,7 @@ export default class DayTimeCanvas {
 				selected: false,
 				x1: topLeft.x,
 				y1: topLeft.y,
-				x2: topLeft.x + CONSTANTS.CELL_WIDTH,
+				x2: topLeft.x + this._calculateCellWidth(),
 				y2: topLeft.y + CONSTANTS.CELL_HEIGHT
 			};
 			((hour, slot) => {
@@ -297,6 +320,7 @@ export default class DayTimeCanvas {
 	}
 
 	_drawResetButton() {
+		let { hourDivider } = this;
 		// filler
 		const btnReset = new paper.Path.Rectangle(
 			new paper.Rectangle(
@@ -322,7 +346,10 @@ export default class DayTimeCanvas {
 		};
 		const resetState = () => {
 			CONSTANTS.DAYS.forEach((day, dayNum) => {
-				CONSTANTS.HOURS.forEach((hour, hourNum) => {
+				Array.from(
+					{ length: CONSTANTS.HOURS.length * hourDivider },
+					(v, i) => i
+				).forEach((hour, hourNum) => {
 					this._setState(state[dayNum][hourNum], false);
 				});
 			});
@@ -337,6 +364,7 @@ export default class DayTimeCanvas {
 	}
 
 	_populateDefaultState() {
+		let { hourDivider } = this;
 		// set defaultValue
 		CONSTANTS.DAYS.forEach((day, dayNum) => {
 			CONSTANTS.HOURS.forEach((hour, hourNum) => {
@@ -352,6 +380,8 @@ export default class DayTimeCanvas {
 	}
 
 	_attachEvents() {
+		let { hourDivider } = this;
+
 		// Marquee Select
 		paper.view.on("mousedrag", ev => {
 			const pos = ev.point;
@@ -379,13 +409,12 @@ export default class DayTimeCanvas {
 	}
 
 	render(canvasId) {
-		console.log("rendering daytime canvas", { hourDivider: this.hourDivider });
 		let hourDivider = this.hourDivider;
 		paper.setup(canvasId);
 		this._drawRowHeader();
-		this._drawColHeader(hourDivider);
+		this._drawColHeader();
 		this._drawResetButton();
-		this._drawSlots(hourDivider);
+		this._drawSlots();
 		this._populateDefaultState();
 		this._attachEvents();
 	}
