@@ -243,10 +243,10 @@ export default class DayTimeCanvas {
 		}
 	}
 
-	_drawColHeader() {
+	_drawColHeader(hourDivider) {
 		// HOUR CONTROLLERS
 		let i, j;
-		for (i = 0; i < 24; i++) {
+		for (i = 0; i < 24 * hourDivider; i++) {
 			const topLeft = new paper.Point(
 				CONSTANTS.STARTX + i * CONSTANTS.CELL_WIDTH,
 				0
@@ -380,11 +380,12 @@ export default class DayTimeCanvas {
 
 	render(canvasId) {
 		console.log("rendering daytime canvas", { hourDivider: this.hourDivider });
+		let hourDivider = this.hourDivider;
 		paper.setup(canvasId);
 		this._drawRowHeader();
-		this._drawColHeader();
+		this._drawColHeader(hourDivider);
 		this._drawResetButton();
-		this._drawSlots();
+		this._drawSlots(hourDivider);
 		this._populateDefaultState();
 		this._attachEvents();
 	}

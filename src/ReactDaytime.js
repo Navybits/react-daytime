@@ -8,8 +8,8 @@ import { WIDTH, HEIGHT } from "./constants";
 class ReactDaytime extends React.Component {
 	constructor(props) {
 		super(props);
-        this.canvasId = "react-daytime-" + uuid();
-        // Ability to divide the hour
+		this.canvasId = "react-daytime-" + uuid();
+		// Ability to divide the hour
 		this.hourDivider = props.hourDivider || 1;
 	}
 	componentWillMount() {
@@ -30,7 +30,8 @@ class ReactDaytime extends React.Component {
 ReactDaytime.propTypes = {
 	defaultValue: PropTypes.object,
 	onChange: PropTypes.func,
-	theme: PropTypes.object
+	theme: PropTypes.object,
+	hourDivider: PropTypes.number
 };
 
 export default ReactDaytime;
