@@ -12,17 +12,38 @@ import {
 import Theme from "./theme";
 
 export default class DayTimeCanvas {
-	constructor(onChange, defaultValue, customTheme, hourDivider, canvasWidth) {
+	constructor(onChange, defaultValue, customTheme, options = {}) {
 		this.theme = new Theme(customTheme);
 		this.defaultValue = defaultValue;
 		callbacks.onChange = onChange;
+		const { hourDivider, canvasWidth, startHour, endHour } = options;
 		this.hourDivider = hourDivider;
 		this.canvasWidth = canvasWidth;
+		this.startHour = startHour;
+		this.endHour = endHour;
 	}
 	_calculateCellWidth() {
-		let { hourDivider, canvasWidth } = this;
+		let { hourDivider, canvasWidth, startHour, endHour } = this;
+		let openingHours = endHour - startHour + 1;
+
 		return (
-			((CONSTANTS.CELL_WIDTH / hourDivider) * canvasWidth) / CONSTANTS.WIDTH
+			((((CONSTANTS.CELL_WIDTH / hourDivider) * canvasWidth) /
+				CONSTANTS.WIDTH) *
+				24) /
+			openingHours
+		);
+	}
+	_missingColumnsNumber() {
+		let { hourDivider, startHour, endHour } = this;
+		let missingLeft = startHour * hourDivider,
+			missingRight = (23 - endHour) * hourDivider;
+		return { missingLeft, missingRight };
+	}
+	_checkInsideOpening(index) {
+		let { hourDivider, startHour, endHour } = this;
+		return (
+			parseInt(index / hourDivider) >= startHour &&
+			parseInt(index / hourDivider) < endHour
 		);
 	}
 	_findCell(point) {
@@ -53,11 +74,14 @@ export default class DayTimeCanvas {
 
 	_syncHeaderState() {
 		let { hourDivider } = this;
+		let _this = this;
 		let selected;
 		let i, j;
 		for (i = 0; i < 7; i++) {
 			selected = true;
 			for (j = 0; j < 24 * hourDivider; j++) {
+				if (!_this._checkInsideOpening(j)) continue;
+
 				if (!state[i][j].selected) {
 					selected = false;
 					break;
@@ -66,6 +90,7 @@ export default class DayTimeCanvas {
 			this._setHeaderState(dayState[i], selected);
 		}
 		for (i = 0; i < 24 * hourDivider; i++) {
+			if (!_this._checkInsideOpening(i)) continue;
 			selected = true;
 			for (j = 0; j < 7; j++) {
 				if (!state[j][i].selected) {
@@ -96,6 +121,7 @@ export default class DayTimeCanvas {
 	}
 
 	_setState(cellState, selected) {
+		if (!cellState) return;
 		cellState.selected = selected;
 		if (selected) {
 			cellState.cell.fillColor = this.theme.cell.backgroundColor[1];
@@ -137,6 +163,7 @@ export default class DayTimeCanvas {
 		const selected = this._flipHeaderCell(rowState[index]);
 		let j;
 		for (j = 0; j < 24 * hourDivider; j++) {
+			if (!this._checkInsideOpening(j)) continue;
 			this._setState(state[index][j], selected);
 		}
 		this._fireChangeEvent();
@@ -170,8 +197,11 @@ export default class DayTimeCanvas {
 		for (i = 0; i < 7; i++) {
 			state[i] = [];
 			for (j = 0; j < 24 * hourDivider; j++) {
+				if (!_this._checkInsideOpening(j)) continue;
 				const topLeft = new paper.Point(
-					CONSTANTS.STARTX + j * _this._calculateCellWidth(),
+					CONSTANTS.STARTX +
+						(j - _this._missingColumnsNumber().missingLeft) *
+							_this._calculateCellWidth(),
 					CONSTANTS.STARTY + i * CONSTANTS.CELL_HEIGHT
 				);
 				const rectSize = new paper.Size(
@@ -202,7 +232,6 @@ export default class DayTimeCanvas {
 	}
 
 	_drawRowHeader() {
-		let { hourDivider } = this;
 		let _this = this;
 		// DAY CONTROLLERS
 		let i, j;
@@ -257,12 +286,15 @@ export default class DayTimeCanvas {
 
 	_drawColHeader() {
 		let { hourDivider } = this;
-
+		let _this = this;
 		// HOUR CONTROLLERS
 		let i, j;
 		for (i = 0; i < 24 * hourDivider; i++) {
+			if (!_this._checkInsideOpening(i)) continue;
 			const topLeft = new paper.Point(
-				CONSTANTS.STARTX + i * this._calculateCellWidth(),
+				CONSTANTS.STARTX +
+					(i - _this._missingColumnsNumber().missingLeft) *
+						this._calculateCellWidth(),
 				0
 			);
 			const rectSize = new paper.Size(
@@ -321,6 +353,7 @@ export default class DayTimeCanvas {
 
 	_drawResetButton() {
 		let { hourDivider } = this;
+
 		// filler
 		const btnReset = new paper.Path.Rectangle(
 			new paper.Rectangle(
@@ -350,7 +383,8 @@ export default class DayTimeCanvas {
 					{ length: CONSTANTS.HOURS.length * hourDivider },
 					(v, i) => i
 				).forEach((hour, hourNum) => {
-					this._setState(state[dayNum][hourNum], false);
+					if (state[dayNum][hourNum])
+						this._setState(state[dayNum][hourNum], false);
 				});
 			});
 			this._fireChangeEvent();
@@ -364,7 +398,6 @@ export default class DayTimeCanvas {
 	}
 
 	_populateDefaultState() {
-		let { hourDivider } = this;
 		// set defaultValue
 		CONSTANTS.DAYS.forEach((day, dayNum) => {
 			CONSTANTS.HOURS.forEach((hour, hourNum) => {
@@ -380,7 +413,6 @@ export default class DayTimeCanvas {
 	}
 
 	_attachEvents() {
-		let { hourDivider } = this;
 
 		// Marquee Select
 		paper.view.on("mousedrag", ev => {
@@ -409,7 +441,6 @@ export default class DayTimeCanvas {
 	}
 
 	render(canvasId) {
-		let hourDivider = this.hourDivider;
 		paper.setup(canvasId);
 		this._drawRowHeader();
 		this._drawColHeader();
