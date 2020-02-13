@@ -14,12 +14,15 @@ class ReactDaytime extends React.Component {
 		this.width = this.props.width || WIDTH;
 		this.startHour = this.props.startHour || 0;
 		this.endHour = this.props.endHour || 23;
+		this.buildCanvas = this.buildCanvas.bind(this);
 	}
-	componentWillMount() {
+	buildCanvas(props, options = {}) {
+		const { withRerender = false } = options;
+		const _props = props || this.props;
 		this.canvas = new DayTimeCanvas(
-			this.props.onChange,
-			this.props.defaultValue,
-			this.props.theme,
+			_props.onChange,
+			_props.defaultValue,
+			_props.theme,
 			{
 				hourDivider: this.hourDivider,
 				canvasWidth: this.width,
@@ -27,6 +30,13 @@ class ReactDaytime extends React.Component {
 				endHour: this.endHour
 			}
 		);
+		if (withRerender) this.canvas.render(this.canvasId);
+	}
+	componentWillMount() {
+		this.buildCanvas();
+	}
+	componentWillReceiveProps(nextProps) {
+		this.buildCanvas(nextProps, { withRerender: true });
 	}
 	componentDidMount() {
 		this.canvas.render(this.canvasId);

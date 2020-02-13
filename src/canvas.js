@@ -200,8 +200,8 @@ export default class DayTimeCanvas {
 				if (!_this._checkInsideOpening(j)) continue;
 				const topLeft = new paper.Point(
 					CONSTANTS.STARTX +
-					(j - _this._missingColumnsNumber().missingLeft) *
-					_this._calculateCellWidth(),
+						(j - _this._missingColumnsNumber().missingLeft) *
+							_this._calculateCellWidth(),
 					CONSTANTS.STARTY + i * CONSTANTS.CELL_HEIGHT
 				);
 				const rectSize = new paper.Size(
@@ -293,8 +293,8 @@ export default class DayTimeCanvas {
 			if (!_this._checkInsideOpening(i)) continue;
 			const topLeft = new paper.Point(
 				CONSTANTS.STARTX +
-				(i - _this._missingColumnsNumber().missingLeft) *
-				this._calculateCellWidth(),
+					(i - _this._missingColumnsNumber().missingLeft) *
+						this._calculateCellWidth(),
 				0
 			);
 			const rectSize = new paper.Size(
@@ -311,7 +311,7 @@ export default class DayTimeCanvas {
 			let splittedContent = CONSTANTS.HOURS[index].split(" ");
 			label.content = `${splittedContent[0]}${
 				hourFraction ? `:${hourFraction}` : ""
-				} ${splittedContent[1]}`;
+			} ${splittedContent[1]}`;
 			label.position = new paper.Point(
 				topLeft.x + this._calculateCellWidth() / 2,
 				topLeft.y + CONSTANTS.STARTY / 2
