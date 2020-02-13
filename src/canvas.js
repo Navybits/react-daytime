@@ -399,8 +399,12 @@ export default class DayTimeCanvas {
 
 	_populateDefaultState() {
 		// set defaultValue
+		let { hourDivider } = this;
 		CONSTANTS.DAYS.forEach((day, dayNum) => {
-			CONSTANTS.HOURS.forEach((hour, hourNum) => {
+			Array.from(
+				{ length: CONSTANTS.HOURS.length * hourDivider },
+				(v, i) => i
+			).forEach((hour, hourNum) => {
 				if (
 					this.defaultValue &&
 					day in this.defaultValue &&
@@ -413,7 +417,6 @@ export default class DayTimeCanvas {
 	}
 
 	_attachEvents() {
-
 		// Marquee Select
 		paper.view.on("mousedrag", ev => {
 			const pos = ev.point;
