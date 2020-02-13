@@ -400,7 +400,6 @@ export default class DayTimeCanvas {
 	_populateDefaultState() {
 		let { hourDivider } = this;
 		// set defaultValue
-		let { hourDivider } = this;
 		CONSTANTS.DAYS.forEach((day, dayNum) => {
 			Array.from(
 				{ length: CONSTANTS.HOURS.length * hourDivider },

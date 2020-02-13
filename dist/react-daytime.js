@@ -24013,8 +24013,6 @@ var DayTimeCanvas = (function () {
 			var hourDivider = this.hourDivider;
 
 			// set defaultValue
-			var hourDivider = this.hourDivider;
-
 			CONSTANTS.DAYS.forEach(function (day, dayNum) {
 				Array.from({ length: CONSTANTS.HOURS.length * hourDivider }, function (v, i) {
 					return i;
