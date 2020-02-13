@@ -24010,6 +24010,8 @@ var DayTimeCanvas = (function () {
 		value: function _populateDefaultState() {
 			var _this6 = this;
 
+			var hourDivider = this.hourDivider;
+
 			// set defaultValue
 			var hourDivider = this.hourDivider;
 
